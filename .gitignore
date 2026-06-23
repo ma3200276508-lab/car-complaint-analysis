@@ -33,3 +33,5 @@ create_report*.js
 metastore_db/
 derby.log
 spark-warehouse/
+大纲_数据清洗与分析.docx
+大纲_前后端开发.docx
