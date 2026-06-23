@@ -1,0 +1,35 @@
+# Node modules
+node_modules/
+
+# IDE
+.idea/
+*.iml
+
+# Maven target
+target/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp scripts
+untitled/
+gen_*.js
+create_report*.js
+
+# Binary reports (excluded from git, too large)
+实训报告一_数据清洗与分析.docx
+实训报告二_前后端开发.docx
+
+# Screenshots folder (large files)
+截图/
+屏幕截图*.png
+
+# Course materials (not part of the project)
+2_课程资料.zip
+新建 DOC 文档.doc
+
+# Spark temp
+metastore_db/
+derby.log
+spark-warehouse/

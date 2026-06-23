@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汽车投诉数据可视化分析大屏</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f0f2f5;
+    color: #333;
+    font-family: 'Microsoft YaHei', sans-serif;
+  }
+  .header {
+    height: 72px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .header h1 {
+    font-size: 28px;
+    letter-spacing: 6px;
+    color: #1a1a2e;
+    font-weight: 700;
+  }
+  .header .time {
+    position: absolute;
+    right: 40px;
+    font-size: 15px;
+    color: #888;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 380px 380px 380px 380px;
+    gap: 16px;
+    padding: 20px 28px;
+  }
+  .panel {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+  }
+  .chart { width: 100%; height: 337px; }
+
+  /* ---- 面板顶条配色 ---- */
+  .panel-brand::before  { background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
+  .panel-trend::before  { background: linear-gradient(90deg, #057a55, #0d9488); }
+  .panel-pie::before    { background: linear-gradient(90deg, #c2410c, #f97316, #eab308); }
+  .panel-bar2::before   { background: linear-gradient(90deg, #9d174d, #ec4899); }
+  .panel-heat::before   { background: linear-gradient(90deg, #3730a3, #6366f1); }
+  .panel-series::before { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
+
+  .panel-title {
+    height: 43px;
+    line-height: 43px;
+    padding-left: 20px;
+    font-size: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+  }
+  .panel-brand .panel-title  { color: #1e3a8a; }
+  .panel-trend .panel-title  { color: #057a55; }
+  .panel-pie .panel-title    { color: #c2410c; }
+  .panel-bar2 .panel-title   { color: #9d174d; }
+  .panel-heat .panel-title   { color: #3730a3; }
+  .panel-series .panel-title { color: #6d28d9; }
+
+  .full-width { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>汽车投诉数据可视化分析大屏</h1>
+  <span class="time" id="clock"></span>
+</div>
+<div class="container">
+  <div class="panel panel-brand">
+    <div class="panel-title">投诉品牌 TOP20</div>
+    <div class="chart" id="brand-chart"></div>
+  </div>
+  <div class="panel panel-trend">
+    <div class="panel-title">日投诉量趋势</div>
+    <div class="chart" id="trend-chart"></div>
+  </div>
+  <div class="panel panel-pie">
+    <div class="panel-title">投诉问题大类分布</div>
+    <div class="chart" id="problem-cat-chart"></div>
+  </div>
+  <div class="panel panel-bar2">
+    <div class="panel-title">问题类型 TOP20</div>
+    <div class="chart" id="problem-type-chart"></div>
+  </div>
+  <div class="panel panel-heat full-width">
+    <div class="panel-title">品牌-问题关联热力图</div>
+    <div class="chart" id="cross-chart" style="height:337px;"></div>
+  </div>
+  <div class="panel panel-series full-width">
+    <div class="panel-title">车系投诉量 TOP15</div>
+    <div class="chart" id="series-chart" style="height:337px;"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+// 调色板 —— 每个图表独立
+const brandColors   = ['#1e3a8a','#2563eb','#3b82f6','#60a5fa','#1d4ed8','#93c5fd','#1e40af','#bfdbfe','#3730a3','#4f46e5'];
+const trendColors   = ['#057a55','#0d9488','#14b8a6'];
+const pieColors     = ['#ea580c','#f97316','#eab308','#f59e0b','#d97706','#ca8a04','#c2410c'];
+const bar2Colors    = ['#9d174d','#db2777','#ec4899','#f472b6','#be185d'];
+const heatColors    = ['#eef2ff','#c7d2fe','#a5b4fc','#818cf8','#6366f1','#4f46e5'];
+const seriesColors  = ['#6d28d9','#7c3aed','#8b5cf6','#a78bfa','#5b21b6'];
+
+const darkText = '#555';
+
+// 时钟
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleString('zh-CN', {hour12: false});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ====== 1. 品牌投诉 TOP20 — 蓝色横向柱状图 ======
+fetch(API + '/api/brand/top20')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('brand-chart'));
+    chart.setOption({
+      color: brandColors,
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 100, right: 60, top: 10, bottom: 10 },
+      xAxis: { type: 'value', axisLabel: { color: darkText, fontSize: 11 },
+        splitLine: { lineStyle: { color: '#eee' } } },
+      yAxis: {
+        type: 'category', inverse: true,
+        data: d.brand.slice(0,20).reverse(),
+        axisLabel: { color: '#444', fontSize: 11 }
+      },
+      series: [{
+        type: 'bar', data: d.cnt.slice(0,20).reverse(),
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+          color: new echarts.graphic.LinearGradient(0,0,1,0,[
+            {offset:0, color:'#1e3a8a'}, {offset:1, color:'#3b82f6'}
+          ])
+        },
+        label: { show: true, position: 'right', color: darkText, fontSize: 10 }
+      }]
+    });
+  });
+
+// ====== 2. 日投诉趋势 — 翠绿色折线图 ======
+fetch(API + '/api/trend/daily')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('trend-chart'));
+    chart.setOption({
+      color: trendColors,
+      tooltip: { trigger: 'axis' },
+      grid: { left: 50, right: 20, top: 20, bottom: 30 },
+      xAxis: { type: 'category', data: d.date, axisLabel: { color: darkText, rotate: 30, fontSize: 10 },
+        axisLine: { lineStyle: { color: '#ccc' } } },
+      yAxis: { type: 'value', axisLabel: { color: darkText },
+        splitLine: { lineStyle: { color: '#eee' } } },
+      series: [{
+        type: 'line', data: d.cnt,
+        smooth: true, symbol: 'circle', symbolSize: 4,
+        lineStyle: { color: '#0d9488', width: 2.5 },
+        itemStyle: { color: '#057a55' },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          {offset:0, color:'rgba(13,148,136,0.25)'}, {offset:1, color:'rgba(13,148,136,0.02)'}
+        ])}
+      }]
+    });
+  });
+
+// ====== 3. 问题大类 — 暖橙色玫瑰饼图 ======
+fetch(API + '/api/problem/category')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('problem-cat-chart'));
+    chart.setOption({
+      color: pieColors,
+      tooltip: { trigger: 'item', formatter: '{b}: {c} 条 ({d}%)' },
+      legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#444', fontSize: 11 } },
+      series: [{
+        type: 'pie', radius: ['48%','78%'], center: ['35%','50%'],
+        roseType: 'area',
+        data: d.category.map((n,i) => ({name:n, value:d.cnt[i]})),
+        label: { formatter: '{b}\n{d}%', color: '#444', fontSize: 10 }
+      }]
+    });
+  });
+
+// ====== 4. 问题类型 TOP20 — 玫红柱状图 ======
+fetch(API + '/api/problem/type')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('problem-type-chart'));
+    chart.setOption({
+      color: bar2Colors,
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 50, right: 20, top: 10, bottom: 80 },
+      xAxis: {
+        type: 'category', data: d.type.slice(0,20),
+        axisLabel: { color: darkText, rotate: 45, fontSize: 9 }
+      },
+      yAxis: { type: 'value', axisLabel: { color: darkText },
+        splitLine: { lineStyle: { color: '#eee' } } },
+      series: [{
+        type: 'bar', data: d.cnt.slice(0,20),
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[
+            {offset:0, color:'#ec4899'}, {offset:1, color:'#9d174d'}
+          ])
+        }
+      }]
+    });
+  });
+
+// ====== 5. 品牌-问题热力图 — 靛蓝色 ======
+fetch(API + '/api/brand/problem/cross')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('cross-chart'));
+    const topBrands = d.brand.slice(0, 15);
+    const heatData = [];
+    topBrands.forEach((b, bi) => {
+      d.category.forEach((c, ci) => {
+        const val = d.data[bi] ? d.data[bi][ci] : 0;
+        if (val > 0) heatData.push([ci, bi, val]);
+      });
+    });
+    chart.setOption({
+      color: heatColors,
+      tooltip: { formatter: p => p.data[2] > 0 ? d.category[p.data[0]] + '<br/>' + topBrands[p.data[1]] + ': ' + p.data[2] + ' 条' : '' },
+      grid: { left: 100, right: 80, top: 10, bottom: 20 },
+      xAxis: {
+        type: 'category', data: d.category,
+        axisLabel: { color: darkText, rotate: 45, fontSize: 10 }
+      },
+      yAxis: {
+        type: 'category', data: topBrands,
+        axisLabel: { color: '#444', fontSize: 11 }
+      },
+      visualMap: { min: 0, max: 100, calculable: true, orient: 'vertical', right: 10, bottom: 40,
+        inRange: { color: heatColors },
+        textStyle: { color: darkText }
+      },
+      series: [{
+        type: 'heatmap', data: heatData,
+        label: { show: true, color: '#333', fontSize: 9 },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.15)' } }
+      }]
+    });
+  });
+
+// ====== 6. 车系 TOP15 — 紫色横向柱状图 ======
+fetch(API + '/api/series/top15')
+  .then(r => r.json())
+  .then(d => {
+    const chart = echarts.init(document.getElementById('series-chart'));
+    chart.setOption({
+      color: seriesColors,
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 180, right: 60, top: 10, bottom: 10 },
+      xAxis: { type: 'value', axisLabel: { color: darkText, fontSize: 11 },
+        splitLine: { lineStyle: { color: '#eee' } } },
+      yAxis: {
+        type: 'category', inverse: true,
+        data: d.series.reverse(),
+        axisLabel: { color: '#444', fontSize: 11 }
+      },
+      series: [{
+        type: 'bar', data: d.cnt.reverse(),
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+          color: new echarts.graphic.LinearGradient(0,0,1,0,[
+            {offset:0, color:'#6d28d9'}, {offset:1, color:'#a78bfa'}
+          ])
+        },
+        label: { show: true, position: 'right', color: darkText, fontSize: 10 }
+      }]
+    });
+  });
+
+// 窗口缩放自适应
+window.addEventListener('resize', () => {
+  ['brand-chart','trend-chart','problem-cat-chart','problem-type-chart','cross-chart','series-chart']
+    .forEach(id => {
+      const dom = document.getElementById(id);
+      if (dom) {
+        const instance = echarts.getInstanceByDom(dom);
+        if (instance) instance.resize();
+      }
+    });
+});
+</script>
+</body>
+</html>
