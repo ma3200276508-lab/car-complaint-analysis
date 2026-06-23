@@ -1,7 +1,7 @@
 # 汽车投诉数据可视化分析 🚗📊
 
 > 基于大数据技术的汽车投诉数据采集、清洗、多维分析及可视化系统  
-> 课程：大数据计算集群技术综合实践 | 教师：郑成 | 2026.06
+> 适合大数据入门学习，覆盖 Hadoop/Spark/Spring Boot/ECharts 全栈实践
 
 [![Tech Stack](https://img.shields.io/badge/Hadoop-3.1.3-blue)](https://hadoop.apache.org/)
 [![Spark](https://img.shields.io/badge/Spark-3.4.2-orange)](https://spark.apache.org/)
@@ -209,18 +209,17 @@ cd car_complaint_web
 
 ---
 
-## 🙏 致谢
+## 📖 学习指南
 
-- 指导教师：郑成
-- 课程参考资料：《大数据技术原理与应用》
-- 开源项目：Apache Hadoop、Apache Spark、Spring Boot、Apache ECharts
+想复现本项目或学习大数据全栈开发？查看 [docs/](docs/) 目录：
 
----
+| 文档 | 内容 |
+|------|------|
+| [环境搭建指南](docs/01-环境搭建指南.md) | Hadoop HA集群 + Spark + MariaDB安装配置 |
+| [数据分析教程](docs/02-Spark数据分析教程.md) | 从CSV到6维OLAP分析的完整Scala代码讲解 |
+| [Web开发教程](docs/03-Spring-Boot-ECharts教程.md) | 后端API开发 + 前端大屏构建全流程 |
+| [常见问题排查](docs/04-常见问题排查.md) | 6个经典报错及解决方案 |
 
 ## 📄 许可
 
-本项目为课程实训项目，仅供学习交流使用。
-
----
-
-*Made with ❤️ by Student | 2026.06*
+MIT License — 自由使用、修改、分发
