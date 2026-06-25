@@ -13,6 +13,8 @@ body{background:#f0f2f5;color:#333;font-family:'Microsoft YaHei',sans-serif}
 .header h1{font-size:28px;letter-spacing:6px;color:#1a1a2e;font-weight:700}
 .header .time{position:absolute;right:40px;font-size:15px;color:#888}
 .header .status{position:absolute;right:210px;font-size:13px}
+.nav-link{position:absolute;left:24px;font-size:14px;color:#3b82f6;text-decoration:none;font-weight:600}
+.nav-link:hover{text-decoration:underline}
 .container{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:380px 380px 380px 380px;gap:16px;padding:20px 28px}
 .panel{background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;overflow:hidden}
 .panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
@@ -46,6 +48,7 @@ body{background:#f0f2f5;color:#333;font-family:'Microsoft YaHei',sans-serif}
 <div id="app">
   <!-- Header -->
   <div class="header">
+    <a class="nav-link" href="/admin.html">📋 数据管理</a>
     <h1>汽车投诉数据可视化分析大屏</h1>
     <span class="status">{{ statusText }}</span>
     <span class="time">{{ clock }}</span>

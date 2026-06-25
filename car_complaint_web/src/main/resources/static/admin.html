@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>数据管理 - 汽车投诉分析系统</title>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4/dist/vue.global.prod.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0f2f5;font-family:'Microsoft YaHei',sans-serif;color:#333}
+.nav{height:56px;background:#1e3a8a;display:flex;align-items:center;padding:0 24px;color:#fff}
+.nav h2{font-size:18px;margin-right:auto}
+.nav a{color:#bfdbfe;margin-left:24px;text-decoration:none;font-size:14px}
+.nav a:hover,.nav a.active{color:#fff}
+.nav .user{font-size:13px;color:#93c5fd}
+.main{padding:20px 24px;max-width:1400px;margin:0 auto}
+
+/* Stats Cards */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.stat-card .num{font-size:32px;font-weight:700}
+.stat-card .label{color:#888;font-size:13px;margin-top:4px}
+.stat-card.c1 .num{color:#1e3a8a}
+.stat-card.c2 .num{color:#eab308}
+.stat-card.c3 .num{color:#059669}
+.stat-card.c4 .num{color:#6d28d9}
+
+/* Toolbar */
+.toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input,.toolbar select{height:36px;border:1px solid #ddd;border-radius:6px;padding:0 12px;font-size:14px}
+.toolbar input{width:240px}
+.btn{height:36px;padding:0 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-blue{background:#3b82f6;color:#fff}
+.btn-blue:hover{background:#2563eb}
+.btn-red{background:#ef4444;color:#fff}
+.btn-red:hover{background:#dc2626}
+.btn-green{background:#059669;color:#fff}
+.btn-gray{background:#e5e7eb;color:#333}
+
+/* Table */
+.table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:#f8fafc;color:#666;font-size:13px;padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid #f0f0f0}
+tr:hover td{background:#f8fafc}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px}
+.tag-pending{background:#fef3c7;color:#92400e}
+.tag-done{background:#d1fae5;color:#065f46}
+
+/* Modal */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:12px;padding:32px;width:560px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{margin-bottom:20px;color:#1e3a8a}
+.modal .field{margin-bottom:14px}
+.modal label{display:block;font-size:13px;color:#666;margin-bottom:4px}
+.modal input,.modal select,.modal textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 12px;font-size:14px;outline:none}
+.modal textarea{height:80px;resize:vertical}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:#3b82f6}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}
+.pagination button{width:32px;height:32px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}
+.pagination button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+.pagination button:disabled{color:#ccc;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Nav -->
+  <div class="nav">
+    <h2>📋 投诉数据管理</h2>
+    <a href="/">🏠 大屏</a>
+    <a href="/admin.html" class="active">📋 数据管理</a>
+    <span class="user">{{ user }}</span>
+    <a href="#" @click.prevent="logout">🚪 退出</a>
+  </div>
+
+  <div class="main">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card c1"><div class="num">{{ stats.total }}</div><div class="label">总投诉数</div></div>
+      <div class="stat-card c2"><div class="num">{{ stats.pending }}</div><div class="label">待处理</div></div>
+      <div class="stat-card c3"><div class="num">{{ stats.resolved }}</div><div class="label">已处理</div></div>
+      <div class="stat-card c4"><div class="num">{{ stats.brands }}</div><div class="label">涉及品牌</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input v-model="kw" @keyup.enter="loadData" placeholder="🔍 搜索品牌/车系/描述...">
+      <select v-model="filterStatus" @change="loadData">
+        <option value="">全部状态</option>
+        <option value="待处理">待处理</option>
+        <option value="已处理">已处理</option>
+      </select>
+      <button class="btn btn-blue" @click="loadData">搜索</button>
+      <button class="btn btn-green" @click="openAdd">+ 新增投诉</button>
+      <button class="btn btn-red" v-if="selected.length" @click="batchDelete">删除选中({{ selected.length }})</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th><input type="checkbox" @change="toggleAll" v-model="allChecked"></th>
+          <th>ID</th><th>品牌</th><th>车系</th><th>车型</th><th>问题大类</th><th>问题类型</th><th>投诉日期</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          <tr v-for="r in list" :key="r.id">
+            <td><input type="checkbox" :value="r.id" v-model="selected"></td>
+            <td>{{ r.id }}</td>
+            <td>{{ r.brand }}</td>
+            <td>{{ r.series }}</td>
+            <td>{{ r.model }}</td>
+            <td>{{ r.problem_category }}</td>
+            <td>{{ r.problem_type }}</td>
+            <td>{{ r.complaint_date }}</td>
+            <td><span :class="'tag '+(r.status==='已处理'?'tag-done':'tag-pending')">{{ r.status }}</span></td>
+            <td>
+              <button class="btn btn-blue" style="height:28px;padding:0 10px;font-size:12px" @click="openEdit(r)">编辑</button>
+              <button class="btn btn-red" style="height:28px;padding:0 10px;font-size:12px;margin-left:4px" @click="del(r.id)">删除</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button :disabled="page<=1" @click="goPage(page-1)">◀</button>
+      <button v-for="p in pages" :key="p" :class="{active:p===page}" @click="goPage(p)">{{ p }}</button>
+      <button :disabled="page>=totalPages" @click="goPage(page+1)">▶</button>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-mask" v-if="showModal" @click.self="showModal=false">
+    <div class="modal">
+      <h3>{{ isEdit ? '编辑投诉' : '新增投诉' }}</h3>
+      <div class="field"><label>品牌 *</label><input v-model="form.brand"></div>
+      <div class="field"><label>车系</label><input v-model="form.series"></div>
+      <div class="field"><label>车型</label><input v-model="form.model"></div>
+      <div class="field"><label>问题大类</label><input v-model="form.problem_category"></div>
+      <div class="field"><label>问题类型</label><input v-model="form.problem_type"></div>
+      <div class="field"><label>投诉日期</label><input type="date" v-model="form.complaint_date"></div>
+      <div class="field"><label>描述</label><textarea v-model="form.description"></textarea></div>
+      <div class="field"><label>状态</label><select v-model="form.status"><option value="待处理">待处理</option><option value="已处理">已处理</option></select></div>
+      <div class="field"><label>处理备注</label><textarea v-model="form.remark"></textarea></div>
+      <div class="modal-btns">
+        <button class="btn btn-gray" @click="showModal=false">取消</button>
+        <button class="btn btn-blue" @click="save">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const {createApp,ref,reactive,computed,onMounted}=Vue;
+createApp({
+  setup(){
+    const user=ref('');
+    const kw=ref('');const filterStatus=ref('');
+    const list=ref([]);const page=ref(1);const size=20;const total=ref(0);const totalPages=ref(1);
+    const selected=ref([]);const allChecked=ref(false);
+    const showModal=ref(false);const isEdit=ref(false);const editId=ref(0);
+    const form=reactive({brand:'',series:'',model:'',problem_category:'',problem_type:'',complaint_date:'',description:'',status:'待处理',remark:''});
+    const stats=reactive({total:0,pending:0,resolved:0,brands:0});
+
+    const pages=computed(()=>{
+      const arr=[];const tp=totalPages.value;
+      for(let i=1;i<=tp;i++) arr.push(i);
+      return arr;
+    });
+
+    async function loadData(){
+      try{
+        const res=await fetch(`/api/manage/list?page=${page.value}&size=${size}&keyword=${kw.value}&status=${filterStatus.value}`);
+        const d=await res.json();list.value=d.data;total.value=d.total;totalPages.value=Math.ceil(d.total/size);
+        selected.value=[];allChecked.value=false;
+      }catch(e){}
+    }
+    async function loadStats(){
+      try{
+        const res=await fetch('/api/manage/stats');
+        const d=await res.json();
+        Object.assign(stats,d);
+      }catch(e){}
+    }
+
+    function toggleAll(e){selected.value=e.target.checked?list.value.map(r=>r.id):[];}
+    function goPage(p){page.value=p;loadData();}
+    function openAdd(){isEdit.value=false;editId.value=0;Object.keys(form).forEach(k=>form[k]='');form.status='待处理';showModal.value=true;}
+    function openEdit(r){isEdit.value=true;editId.value=r.id;Object.assign(form,r);showModal.value=true;}
+    async function save(){
+      const url=isEdit.value?`/api/manage/update/${editId.value}`:'/api/manage/add';
+      const method=isEdit.value?'PUT':'POST';
+      await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
+      showModal.value=false;loadData();loadStats();
+    }
+    async function del(id){if(confirm('确认删除？')){await fetch(`/api/manage/delete/${id}`,{method:'DELETE'});loadData();loadStats();}}
+    async function batchDelete(){
+      if(confirm(`确认删除选中的 ${selected.value.length} 条？`)){
+        await fetch('/api/manage/batch-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:selected.value})});
+        loadData();loadStats();
+      }
+    }
+    async function logout(){await fetch('/api/logout',{method:'POST'});location.href='/login.html';}
+
+    onMounted(async ()=>{
+      const res=await fetch('/api/user/info');
+      const d=await res.json();
+      if(!d.success){location.href='/login.html';return;}
+      user.value=d.user.nickname||d.user.username;
+      loadData();loadStats();
+    });
+
+    return {user,kw,filterStatus,list,page,total,totalPages,selected,allChecked,stats,showModal,isEdit,form,pages,toggleAll,goPage,openAdd,openEdit,save,del,batchDelete,logout,loadData};
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
