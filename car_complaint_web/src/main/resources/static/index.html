@@ -4,335 +4,293 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>汽车投诉数据可视化分析大屏</title>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4/dist/vue.global.prod.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #f0f2f5; color: #333;
-    font-family: 'Microsoft YaHei', sans-serif;
-  }
-  .header {
-    height: 72px; background: #fff;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: relative;
-  }
-  .header h1 { font-size: 28px; letter-spacing: 6px; color: #1a1a2e; font-weight: 700; }
-  .header .time { position: absolute; right: 40px; font-size: 15px; color: #888; }
-  .header .status-dot { position: absolute; right: 200px; font-size: 13px; color: #888; }
-
-  .container {
-    display: grid; grid-template-columns: 1fr 1fr;
-    grid-template-rows: 380px 380px 380px 380px;
-    gap: 16px; padding: 20px 28px;
-  }
-  .panel {
-    background: #fff; border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    position: relative; overflow: hidden;
-  }
-  .panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-  .panel-brand::before  { background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
-  .panel-trend::before  { background: linear-gradient(90deg, #057a55, #0d9488); }
-  .panel-pie::before    { background: linear-gradient(90deg, #c2410c, #f97316, #eab308); }
-  .panel-bar2::before   { background: linear-gradient(90deg, #9d174d, #ec4899); }
-  .panel-heat::before   { background: linear-gradient(90deg, #3730a3, #6366f1); }
-  .panel-series::before { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
-
-  .chart { width: 100%; height: 337px; position: relative; }
-  .panel-title {
-    height: 43px; line-height: 43px; padding-left: 20px;
-    font-size: 15px; font-weight: 700; border-bottom: 1px solid #eee;
-  }
-  .panel-title .badge { font-size: 11px; font-weight: 400; margin-left: 8px; padding: 2px 8px; border-radius: 10px; }
-
-  /* Loading 动画 */
-  .loading-mask {
-    position: absolute; inset: 0; background: rgba(255,255,255,0.85);
-    display: flex; align-items: center; justify-content: center; z-index: 10;
-  }
-  .loading-mask .spinner {
-    width: 32px; height: 32px;
-    border: 3px solid #e5e7eb; border-top: 3px solid #3b82f6;
-    border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Error 状态 */
-  .error-msg {
-    position: absolute; inset: 0; display: flex;
-    flex-direction: column; align-items: center; justify-content: center;
-    color: #999; font-size: 14px; z-index: 10; background: rgba(255,255,255,0.9);
-  }
-  .error-msg .retry-btn {
-    margin-top: 10px; padding: 6px 20px;
-    background: #3b82f6; color: #fff; border: none;
-    border-radius: 6px; cursor: pointer; font-size: 13px;
-  }
-  .error-msg .retry-btn:hover { background: #2563eb; }
-
-  .full-width { grid-column: 1 / -1; }
-
-  /* Toast */
-  .toast {
-    position: fixed; top: 20px; right: 20px; z-index: 9999;
-    background: #ef4444; color: #fff; padding: 12px 24px;
-    border-radius: 8px; font-size: 14px;
-    box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-    display: none; animation: slideIn 0.3s;
-  }
-  .toast.show { display: block; }
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0f2f5;color:#333;font-family:'Microsoft YaHei',sans-serif}
+.header{height:72px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);position:relative}
+.header h1{font-size:28px;letter-spacing:6px;color:#1a1a2e;font-weight:700}
+.header .time{position:absolute;right:40px;font-size:15px;color:#888}
+.header .status{position:absolute;right:210px;font-size:13px}
+.container{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:380px 380px 380px 380px;gap:16px;padding:20px 28px}
+.panel{background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.panel-brand::before{background:linear-gradient(90deg,#1e3a8a,#3b82f6)}
+.panel-trend::before{background:linear-gradient(90deg,#057a55,#0d9488)}
+.panel-pie::before{background:linear-gradient(90deg,#c2410c,#f97316,#eab308)}
+.panel-bar2::before{background:linear-gradient(90deg,#9d174d,#ec4899)}
+.panel-heat::before{background:linear-gradient(90deg,#3730a3,#6366f1)}
+.panel-series::before{background:linear-gradient(90deg,#6d28d9,#a78bfa)}
+.chart{width:100%;height:337px}
+.panel-title{height:43px;line-height:43px;padding-left:20px;font-size:15px;font-weight:700;border-bottom:1px solid #eee}
+.panel-brand .panel-title{color:#1e3a8a}
+.panel-trend .panel-title{color:#057a55}
+.panel-pie .panel-title{color:#c2410c}
+.panel-bar2 .panel-title{color:#9d174d}
+.panel-heat .panel-title{color:#3730a3}
+.panel-series .panel-title{color:#6d28d9}
+.full-width{grid-column:1/-1}
+.loading-mask{position:absolute;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;z-index:10}
+.spinner{width:32px;height:32px;border:3px solid #e5e7eb;border-top:3px solid #3b82f6;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{position:absolute;inset:0 0 43px 0;top:43px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#999;font-size:14px;background:rgba(255,255,255,.95);z-index:10}
+.retry-btn{margin-top:10px;padding:6px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.retry-btn:hover{background:#2563eb}
+.toast{position:fixed;top:20px;right:20px;z-index:9999;background:#ef4444;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(239,68,68,.3);animation:slideIn .3s}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>汽车投诉数据可视化分析大屏</h1>
-  <span class="status-dot" id="status">🔄 加载中...</span>
-  <span class="time" id="clock"></span>
-</div>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <h1>汽车投诉数据可视化分析大屏</h1>
+    <span class="status">{{ statusText }}</span>
+    <span class="time">{{ clock }}</span>
+  </div>
 
-<div id="toast" class="toast"></div>
+  <!-- Toast -->
+  <div v-if="toast" class="toast">{{ toast }}</div>
 
-<div class="container">
-  <div class="panel panel-brand">
-    <div class="panel-title">投诉品牌 TOP20 <span class="badge" id="badge-brand"></span></div>
-    <div class="chart" id="brand-chart"><div class="loading-mask"><div class="spinner"></div></div></div>
-  </div>
-  <div class="panel panel-trend">
-    <div class="panel-title">日投诉量趋势 <span class="badge" id="badge-trend"></span></div>
-    <div class="chart" id="trend-chart"><div class="loading-mask"><div class="spinner"></div></div></div>
-  </div>
-  <div class="panel panel-pie">
-    <div class="panel-title">投诉问题大类分布 <span class="badge" id="badge-pie"></span></div>
-    <div class="chart" id="problem-cat-chart"><div class="loading-mask"><div class="spinner"></div></div></div>
-  </div>
-  <div class="panel panel-bar2">
-    <div class="panel-title">问题类型 TOP20 <span class="badge" id="badge-bar2"></span></div>
-    <div class="chart" id="problem-type-chart"><div class="loading-mask"><div class="spinner"></div></div></div>
-  </div>
-  <div class="panel panel-heat full-width">
-    <div class="panel-title">品牌-问题关联热力图 <span class="badge" id="badge-heat"></span></div>
-    <div class="chart" id="cross-chart" style="height:337px;"><div class="loading-mask"><div class="spinner"></div></div></div>
-  </div>
-  <div class="panel panel-series full-width">
-    <div class="panel-title">车系投诉量 TOP15 <span class="badge" id="badge-series"></span></div>
-    <div class="chart" id="series-chart" style="height:337px;"><div class="loading-mask"><div class="spinner"></div></div></div>
+  <div class="container">
+    <!-- 品牌TOP20 -->
+    <div class="panel panel-brand">
+      <div class="panel-title">投诉品牌 TOP20</div>
+      <div class="chart" :id="'brand-chart'">
+        <div v-if="charts.brand.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.brand.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadBrand">重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 日趋势 -->
+    <div class="panel panel-trend">
+      <div class="panel-title">日投诉量趋势</div>
+      <div class="chart" :id="'trend-chart'">
+        <div v-if="charts.trend.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.trend.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadTrend">重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 问题大类饼图 -->
+    <div class="panel panel-pie">
+      <div class="panel-title">投诉问题大类分布</div>
+      <div class="chart" :id="'problem-cat-chart'">
+        <div v-if="charts.cat.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.cat.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadCategory">重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 问题类型TOP20 -->
+    <div class="panel panel-bar2">
+      <div class="panel-title">问题类型 TOP20</div>
+      <div class="chart" :id="'problem-type-chart'">
+        <div v-if="charts.type.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.type.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadType">重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 热力图 -->
+    <div class="panel panel-heat full-width">
+      <div class="panel-title">品牌-问题关联热力图</div>
+      <div class="chart" :id="'cross-chart'" style="height:337px">
+        <div v-if="charts.cross.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.cross.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadCross">重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 车系TOP15 -->
+    <div class="panel panel-series full-width">
+      <div class="panel-title">车系投诉量 TOP15</div>
+      <div class="chart" :id="'series-chart'" style="height:337px">
+        <div v-if="charts.series.loading" class="loading-mask"><div class="spinner"></div></div>
+        <div v-if="charts.series.error" class="error-box">
+          <span>⚠ 数据加载失败</span>
+          <button class="retry-btn" @click="loadSeries">重试</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
+const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
 const API = '';
 const darkText = '#555';
-let loadedCount = 0;
-const TOTAL = 6;
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
+createApp({
+  setup() {
+    // ===== 状态 =====
+    const clock = ref('');
+    const toast = ref('');
+    const loadedCount = ref(0);
 
-function updateStatus() {
-  loadedCount++;
-  const status = document.getElementById('status');
-  if (loadedCount >= TOTAL) status.innerHTML = '✅ 全部加载完成';
-  else status.innerHTML = `🔄 加载中 (${loadedCount}/${TOTAL})`;
-}
+    const charts = ref({
+      brand:  { loading: true, error: false },
+      trend:  { loading: true, error: false },
+      cat:    { loading: true, error: false },
+      type:   { loading: true, error: false },
+      cross:  { loading: true, error: false },
+      series: { loading: true, error: false },
+    });
 
-function clearLoading(chartId) {
-  const dom = document.getElementById(chartId);
-  if (!dom) return;
-  const mask = dom.querySelector('.loading-mask');
-  const err = dom.querySelector('.error-msg');
-  if (mask) mask.style.display = 'none';
-  if (err) err.style.display = 'none';
-}
+    const statusText = computed(() => {
+      if (loadedCount.value >= 6) return '✅ 全部加载完成';
+      return `🔄 加载中 (${loadedCount.value}/6)`;
+    });
 
-function showError(chartId, badgeId, retryFn) {
-  const dom = document.getElementById(chartId);
-  if (!dom) return;
-  const mask = dom.querySelector('.loading-mask');
-  if (mask) mask.style.display = 'none';
-  // remove old error
-  const old = dom.querySelector('.error-msg');
-  if (old) old.remove();
-  const errDiv = document.createElement('div');
-  errDiv.className = 'error-msg';
-  errDiv.innerHTML = '<span>⚠ 数据加载失败</span><button class="retry-btn">重试</button>';
-  errDiv.querySelector('.retry-btn').onclick = retryFn;
-  dom.appendChild(errDiv);
-  if (badgeId) document.getElementById(badgeId).textContent = '加载失败';
-}
+    // ===== 工具 =====
+    function showToast(msg, duration = 3000) {
+      toast.value = msg;
+      setTimeout(() => toast.value = '', duration);
+    }
 
-function setBadge(id, text, color) {
-  const b = document.getElementById(id);
-  if (b) { b.textContent = text; b.style.background = color || '#f0f0f0'; b.style.color = '#666'; }
-}
+    function onLoaded() { loadedCount.value++; }
 
-// Clocks
-function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleString('zh-CN',{hour12:false});
-}
-updateClock(); setInterval(updateClock, 1000);
-
-// ====== Chart builders ======
-
-function loadBrandChart() {
-  clearLoading('brand-chart');
-  fetch(API+'/api/brand/top20')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    // ===== 图表渲染 =====
+    function renderBrand(data) {
       const chart = echarts.init(document.getElementById('brand-chart'));
       chart.setOption({
-        color: ['#1e3a8a','#2563eb','#3b82f6','#60a5fa','#1d4ed8','#93c5fd'],
         tooltip: { trigger:'axis', axisPointer:{type:'shadow'} },
         grid: { left:100, right:60, top:10, bottom:10 },
         xAxis: { type:'value', axisLabel:{color:darkText,fontSize:11}, splitLine:{lineStyle:{color:'#eee'}} },
-        yAxis: { type:'category', inverse:true, data:d.brand.slice(0,20).reverse(), axisLabel:{color:'#444',fontSize:11} },
-        series: [{ type:'bar', data:d.cnt.slice(0,20).reverse(),
+        yAxis: { type:'category', inverse:true, data:data.brand.slice(0,20).reverse(), axisLabel:{color:'#444',fontSize:11} },
+        series: [{ type:'bar', data:data.cnt.slice(0,20).reverse(),
           itemStyle:{ borderRadius:[0,4,4,0], color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#1e3a8a'},{offset:1,color:'#3b82f6'}]) },
-          label:{ show:true, position:'right', color:darkText, fontSize:10 } }]
+          label:{ show:true, position:'right', color:darkText,fontSize:10 } }]
       });
-      setBadge('badge-brand', `${d.brand.length} 个品牌`, '#e8f0fe');
-      updateStatus();
-    })
-    .catch(e => { showError('brand-chart','badge-brand',loadBrandChart); showToast('品牌数据加载失败: '+e.message); });
-}
+    }
 
-function loadTrendChart() {
-  clearLoading('trend-chart');
-  fetch(API+'/api/trend/daily')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    function renderTrend(data) {
       const chart = echarts.init(document.getElementById('trend-chart'));
       chart.setOption({
-        color:['#057a55'],
         tooltip:{ trigger:'axis' },
         grid:{ left:50, right:20, top:20, bottom:30 },
-        xAxis:{ type:'category', data:d.date, axisLabel:{color:darkText,rotate:30,fontSize:10} },
+        xAxis:{ type:'category', data:data.date, axisLabel:{color:darkText,rotate:30,fontSize:10} },
         yAxis:{ type:'value', axisLabel:{color:darkText}, splitLine:{lineStyle:{color:'#eee'}} },
-        series:[{ type:'line', data:d.cnt, smooth:true, symbol:'circle', symbolSize:4,
+        series:[{ type:'line', data:data.cnt, smooth:true, symbol:'circle', symbolSize:4,
           lineStyle:{color:'#0d9488',width:2.5}, itemStyle:{color:'#057a55'},
-          areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(13,148,136,0.25)'},{offset:1,color:'rgba(13,148,136,0.02)'}])}
+          areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(13,148,136,.25)'},{offset:1,color:'rgba(13,148,136,.02)'}])}
         }]
       });
-      setBadge('badge-trend', `${d.date.length} 天`, '#e6f7f0');
-      updateStatus();
-    })
-    .catch(e => { showError('trend-chart','badge-trend',loadTrendChart); showToast('趋势数据加载失败: '+e.message); });
-}
+    }
 
-function loadPieChart() {
-  clearLoading('problem-cat-chart');
-  fetch(API+'/api/problem/category')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    function renderCategory(data) {
       const chart = echarts.init(document.getElementById('problem-cat-chart'));
       chart.setOption({
-        color:['#ea580c','#f97316','#eab308','#f59e0b','#d97706','#ca8a04','#c2410c'],
         tooltip:{ trigger:'item', formatter:'{b}: {c} 条 ({d}%)' },
         legend:{ orient:'vertical', right:10, top:'center', textStyle:{color:'#444',fontSize:11} },
         series:[{ type:'pie', radius:['48%','78%'], center:['35%','50%'], roseType:'area',
-          data:d.category.map((n,i)=>({name:n, value:d.cnt[i]})),
-          label:{ formatter:'{b}\n{d}%', color:'#444', fontSize:10 }
-        }]
+          data:data.category.map((n,i)=>({name:n,value:data.cnt[i]})),
+          label:{ formatter:'{b}\n{d}%', color:'#444',fontSize:10 } }]
       });
-      setBadge('badge-pie', `${d.category.length} 大类`, '#fff3e0');
-      updateStatus();
-    })
-    .catch(e => { showError('problem-cat-chart','badge-pie',loadPieChart); showToast('问题大类加载失败: '+e.message); });
-}
+    }
 
-function loadBar2Chart() {
-  clearLoading('problem-type-chart');
-  fetch(API+'/api/problem/type')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    function renderType(data) {
       const chart = echarts.init(document.getElementById('problem-type-chart'));
       chart.setOption({
-        color:['#9d174d'],
         tooltip:{ trigger:'axis', axisPointer:{type:'shadow'} },
         grid:{ left:50, right:20, top:10, bottom:80 },
-        xAxis:{ type:'category', data:d.type.slice(0,20), axisLabel:{color:darkText,rotate:45,fontSize:9} },
+        xAxis:{ type:'category', data:data.type.slice(0,20), axisLabel:{color:darkText,rotate:45,fontSize:9} },
         yAxis:{ type:'value', axisLabel:{color:darkText}, splitLine:{lineStyle:{color:'#eee'}} },
-        series:[{ type:'bar', data:d.cnt.slice(0,20),
-          itemStyle:{ borderRadius:[4,4,0,0], color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#ec4899'},{offset:1,color:'#9d174d'}]) }
-        }]
+        series:[{ type:'bar', data:data.cnt.slice(0,20),
+          itemStyle:{ borderRadius:[4,4,0,0], color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#ec4899'},{offset:1,color:'#9d174d'}]) } }]
       });
-      setBadge('badge-bar2', `${d.type.length} 种`, '#fce4ec');
-      updateStatus();
-    })
-    .catch(e => { showError('problem-type-chart','badge-bar2',loadBar2Chart); showToast('问题类型加载失败: '+e.message); });
-}
+    }
 
-function loadHeatChart() {
-  clearLoading('cross-chart');
-  fetch(API+'/api/brand/problem/cross')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    function renderCross(data) {
       const chart = echarts.init(document.getElementById('cross-chart'));
-      const topBrands = d.brand.slice(0,15);
+      const topBrands = data.brand.slice(0,15);
       const heatData = [];
-      topBrands.forEach((b,bi) => {
-        d.category.forEach((c,ci) => {
-          const val = d.data[bi] ? d.data[bi][ci] : 0;
-          if (val > 0) heatData.push([ci, bi, val]);
-        });
-      });
-      const heatColors = ['#eef2ff','#c7d2fe','#a5b4fc','#818cf8','#6366f1','#4f46e5'];
+      topBrands.forEach((b,bi) => data.category.forEach((c,ci) => {
+        const v = data.data[bi]?.[ci] || 0;
+        if (v>0) heatData.push([ci,bi,v]);
+      }));
       chart.setOption({
-        tooltip:{ formatter: p => p.data[2]>0 ? d.category[p.data[0]]+'<br/>'+topBrands[p.data[1]]+': '+p.data[2]+' 条' : '' },
+        tooltip:{ formatter:p=>p.data[2]>0 ? data.category[p.data[0]]+'<br/>'+topBrands[p.data[1]]+': '+p.data[2]+' 条' : '' },
         grid:{ left:100, right:80, top:10, bottom:20 },
-        xAxis:{ type:'category', data:d.category, axisLabel:{color:darkText,rotate:45,fontSize:10} },
+        xAxis:{ type:'category', data:data.category, axisLabel:{color:darkText,rotate:45,fontSize:10} },
         yAxis:{ type:'category', data:topBrands, axisLabel:{color:'#444',fontSize:11} },
-        visualMap:{ min:0, max:100, calculable:true, orient:'vertical', right:10, bottom:40, inRange:{color:heatColors}, textStyle:{color:darkText} },
-        series:[{ type:'heatmap', data:heatData, label:{ show:true, color:'#333', fontSize:9 } }]
+        visualMap:{ min:0, max:100, calculable:true, orient:'vertical', right:10, bottom:40,
+          inRange:{color:['#eef2ff','#c7d2fe','#a5b4fc','#818cf8','#6366f1','#4f46e5']}, textStyle:{color:darkText} },
+        series:[{ type:'heatmap', data:heatData, label:{ show:true, color:'#333',fontSize:9 } }]
       });
-      setBadge('badge-heat', `TOP${topBrands.length}×${d.category.length}`, '#e8eaf6');
-      updateStatus();
-    })
-    .catch(e => { showError('cross-chart','badge-heat',loadHeatChart); showToast('热力图数据加载失败: '+e.message); });
-}
+    }
 
-function loadSeriesChart() {
-  clearLoading('series-chart');
-  fetch(API+'/api/series/top15')
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(d => {
+    function renderSeries(data) {
       const chart = echarts.init(document.getElementById('series-chart'));
       chart.setOption({
-        color:['#6d28d9'],
         tooltip:{ trigger:'axis', axisPointer:{type:'shadow'} },
         grid:{ left:180, right:60, top:10, bottom:10 },
         xAxis:{ type:'value', axisLabel:{color:darkText,fontSize:11}, splitLine:{lineStyle:{color:'#eee'}} },
-        yAxis:{ type:'category', inverse:true, data:d.series.reverse(), axisLabel:{color:'#444',fontSize:11} },
-        series:[{ type:'bar', data:d.cnt.reverse(),
+        yAxis:{ type:'category', inverse:true, data:data.series.reverse(), axisLabel:{color:'#444',fontSize:11} },
+        series:[{ type:'bar', data:data.cnt.reverse(),
           itemStyle:{ borderRadius:[0,4,4,0], color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#6d28d9'},{offset:1,color:'#a78bfa'}]) },
-          label:{ show:true, position:'right', color:darkText, fontSize:10 } }]
+          label:{ show:true, position:'right', color:darkText,fontSize:10 } }]
       });
-      setBadge('badge-series', `${d.series.length} 车系`, '#f3e8ff');
-      updateStatus();
-    })
-    .catch(e => { showError('series-chart','badge-series',loadSeriesChart); showToast('车系数据加载失败: '+e.message); });
-}
+    }
 
-// Kick off all charts
-loadBrandChart();
-loadTrendChart();
-loadPieChart();
-loadBar2Chart();
-loadHeatChart();
-loadSeriesChart();
+    // ===== 通用数据加载 =====
+    async function fetchChart(url, chartKey, renderFn) {
+      charts.value[chartKey] = { loading: true, error: false };
+      await nextTick();
+      try {
+        const res = await fetch(API + url);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        renderFn(data);
+        charts.value[chartKey] = { loading: false, error: false };
+        onLoaded();
+      } catch (e) {
+        charts.value[chartKey] = { loading: false, error: true };
+        showToast(`${chartKey} 加载失败: ${e.message}`);
+      }
+    }
 
-// Responsive resize
-window.addEventListener('resize', () => {
-  ['brand-chart','trend-chart','problem-cat-chart','problem-type-chart','cross-chart','series-chart']
-    .forEach(id => {
-      const dom = document.getElementById(id);
-      if (dom) { const i = echarts.getInstanceByDom(dom); if (i) i.resize(); }
+    // ===== 各图加载 =====
+    const loadBrand   = () => fetchChart('/api/brand/top20',       'brand',  renderBrand);
+    const loadTrend   = () => fetchChart('/api/trend/daily',       'trend',  renderTrend);
+    const loadCategory= () => fetchChart('/api/problem/category',  'cat',    renderCategory);
+    const loadType    = () => fetchChart('/api/problem/type',      'type',   renderType);
+    const loadCross   = () => fetchChart('/api/brand/problem/cross','cross',  renderCross);
+    const loadSeries  = () => fetchChart('/api/series/top15',      'series', renderSeries);
+
+    // ===== 生命周期 =====
+    onMounted(() => {
+      // 时钟
+      const tick = () => clock.value = new Date().toLocaleString('zh-CN', { hour12: false });
+      tick(); setInterval(tick, 1000);
+
+      // 启动所有图表
+      loadBrand(); loadTrend(); loadCategory(); loadType(); loadCross(); loadSeries();
+
+      // 响应式缩放
+      window.addEventListener('resize', () => {
+        ['brand-chart','trend-chart','problem-cat-chart','problem-type-chart','cross-chart','series-chart']
+          .forEach(id => { const i = echarts.getInstanceByDom(document.getElementById(id)); if (i) i.resize(); });
+      });
     });
-});
+
+    return { clock, toast, statusText, charts, loadBrand, loadTrend, loadCategory, loadType, loadCross, loadSeries };
+  }
+}).mount('#app');
 </script>
 </body>
 </html>
